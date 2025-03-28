@@ -1,0 +1,3 @@
+# Ignore the uploads directories
+uploads/
+static/uploads/
