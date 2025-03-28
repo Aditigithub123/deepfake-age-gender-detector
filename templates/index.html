@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Deepfake, Gender & Age Detection</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    body {
+      background-color: #121212;
+      color: #f5f5f5;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .container {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 2rem;
+      background-color: #1e1e1e;
+      border-radius: 10px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.6);
+    }
+    h1, h2 {
+      text-align: center;
+      color: #e91e63;
+    }
+    input[type="file"] {
+      background-color: #333;
+      border: none;
+      padding: 10px;
+      color: #f5f5f5;
+      border-radius: 5px;
+    }
+    button {
+      background-color: #e91e63;
+      border: none;
+      padding: 10px 20px;
+      color: #fff;
+      font-size: 1rem;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 10px;
+    }
+    button:hover {
+      background-color: #c2185b;
+    }
+    .result {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 1.2rem;
+    }
+    .video-container {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    video {
+      width: 100%;
+      max-width: 500px;
+      border: 3px solid #e91e63;
+      border-radius: 10px;
+    }
+    img.displayed {
+      max-width: 100%;
+      margin-top: 20px;
+      border: 3px solid #e91e63;
+      border-radius: 10px;
+    }
+    .flash {
+      text-align: center;
+      margin: 10px;
+      padding: 10px;
+      border-radius: 5px;
+    }
+    .flash.error {
+      background-color: #d32f2f;
+      color: #fff;
+    }
+    .flash.success {
+      background-color: #388e3c;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Welcome, {{ name }}!</h1>
+    <h2>Deepfake, Gender & Age Detection</h2>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    
+    <form method="POST" enctype="multipart/form-data">
+      <!-- Hidden fields to pass login details -->
+      <input type="hidden" name="name" value="{{ name }}">
+      <input type="hidden" name="actual_age" value="{{ actual_age }}">
+      <input type="hidden" name="gender" value="{{ gender }}">
+      
+      <h2>Upload an Image</h2>
+      <input type="file" name="file" accept="image/*">
+      <br>
+      <button type="submit" name="submit_image" value="upload">Analyze Uploaded Image</button>
+    </form>
+    
+    <hr style="border-color: #333;">
+    
+    <div class="video-container">
+      <h2>Or Capture from Webcam</h2>
+      <video id="video" autoplay></video>
+      <br>
+      <button id="capture">Capture Image</button>
+    </div>
+    
+    <form method="POST" id="captureForm" style="display:none;">
+      <!-- Hidden fields to pass login details -->
+      <input type="hidden" name="name" value="{{ name }}">
+      <input type="hidden" name="actual_age" value="{{ actual_age }}">
+      <input type="hidden" name="gender" value="{{ gender }}">
+      <input type="hidden" name="captured_image" id="captured_image">
+      <button type="submit" name="submit_image" value="capture">Analyze Captured Image</button>
+    </form>
+    
+    {% if results %}
+    <div class="result">
+      <h2>Results</h2>
+      <p><strong>Deepfake Detection:</strong> {{ results.deepfake }}</p>
+      <p><strong>Predicted Gender:</strong> {{ results.predicted_gender }}</p>
+      <p><strong>Age Prediction:</strong> {{ results.age }}</p>
+      {% if img_url %}
+      <img src="{{ img_url }}" alt="Input Image" class="displayed">
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+  
+  <script>
+    // Webcam capture functionality
+    const video = document.getElementById('video');
+    const captureButton = document.getElementById('capture');
+    const captureForm = document.getElementById('captureForm');
+    const capturedImageInput = document.getElementById('captured_image');
+    
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+        video.srcObject = stream;
+        video.play();
+      });
+    }
+    
+    captureButton.addEventListener('click', () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext('2d').drawImage(video, 0, 0);
+      const dataURL = canvas.toDataURL('image/jpeg');
+      capturedImageInput.value = dataURL;
+      captureForm.style.display = 'block';
+      alert("Image captured! Now click on 'Analyze Captured Image' to process the image.");
+    });
+  </script>
+</body>
+</html>
