@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login - User Data</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    body {
+      background-color: #121212;
+      color: #f5f5f5;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .login-container {
+      max-width: 500px;
+      margin: 3rem auto;
+      padding: 2rem;
+      background-color: #1e1e1e;
+      border-radius: 10px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.6);
+      text-align: center;
+    }
+    input[type="text"], input[type="number"] {
+      width: 80%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      border: none;
+      background-color: #333;
+      color: #f5f5f5;
+    }
+    .gender-group {
+      margin: 10px 0;
+    }
+    .gender-group input {
+      margin: 0 5px;
+    }
+    button {
+      background-color: #e91e63;
+      border: none;
+      padding: 10px 20px;
+      color: #fff;
+      font-size: 1rem;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    button:hover {
+      background-color: #c2185b;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <h1>Welcome!</h1>
+    <form action="{{ url_for('login') }}" method="POST">
+      <input type="text" name="name" placeholder="Enter your name" required>
+      <br>
+      <input type="number" name="actual_age" placeholder="Enter your actual age" required>
+      <br>
+      <div class="gender-group">
+        <label>Select your gender:</label>
+        <br>
+        <input type="radio" name="gender" value="Male" required> Male
+        <input type="radio" name="gender" value="Female" required> Female
+      </div>
+      <button type="submit">Login</button>
+    </form>
+  </div>
+</body>
+</html>
