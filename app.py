@@ -28,11 +28,11 @@ if not os.path.exists(UPLOAD_FOLDER):
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 def load_models():
-    deepfake_model = load_model(r"C:\Users\adaga\Downloads\models_all3\real_fake_vgg_model.h5", compile=False)
-    gender_model = load_model(r"C:\Users\adaga\Downloads\models_all3\MobileNetV2_gender_detection_model.h5", compile=False)
-    age_model = load_model(r"C:\Users\adaga\Downloads\models_all3\simple_cnn_age.h5", compile=False)
+    deepfake_model = load_model("models/real_fake_vgg_model.h5", compile=False)
+    gender_model = load_model("models/MobileNetV2_gender_detection_model.h5", compile=False)
+    age_model = load_model("models/simple_cnn_age.h5", compile=False)
     return deepfake_model, gender_model, age_model
-
+    
 deepfake_model, gender_model, age_model = load_models()
 
 def preprocess_image(image_path, target_size):
