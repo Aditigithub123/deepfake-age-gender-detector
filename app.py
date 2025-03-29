@@ -1,6 +1,7 @@
 import os
 import cv2
 import numpy as np
+import tensorflow as tf
 from tensorflow.keras.models import load_model
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from werkzeug.utils import secure_filename
@@ -9,11 +10,11 @@ from io import BytesIO
 from PIL import Image
 import mysql.connector
 from tensorflow.keras.layers import InputLayer as KerasInputLayer
+from tensorflow.keras.utils import custom_object_scope
 
 # Custom InputLayer to handle 'batch_shape' conversion
 class CustomInputLayer(KerasInputLayer):
     def __init__(self, **kwargs):
-        # Remap 'batch_shape' to 'batch_input_shape' if present
         if 'batch_shape' in kwargs:
             kwargs['batch_input_shape'] = kwargs.pop('batch_shape')
         super(CustomInputLayer, self).__init__(**kwargs)
@@ -37,22 +38,16 @@ if not os.path.exists(UPLOAD_FOLDER):
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 def load_models():
-    # Load models from the local 'models' folder using relative paths and custom InputLayer
-    deepfake_model = load_model(
-        "models/real_fake_vgg_model.h5",
-        compile=False,
-        custom_objects={'InputLayer': CustomInputLayer}
-    )
-    gender_model = load_model(
-        "models/MobileNetV2_gender_detection_model.h5",
-        compile=False,
-        custom_objects={'InputLayer': CustomInputLayer}
-    )
-    age_model = load_model(
-        "models/simple_cnn_age.h5",
-        compile=False,
-        custom_objects={'InputLayer': CustomInputLayer}
-    )
+    # Define custom objects for the model deserialization
+    custom_objs = {
+        'InputLayer': CustomInputLayer,
+        'DTypePolicy': tf.keras.mixed_precision.Policy
+    }
+    # Use a custom object scope so that these objects are recognized when loading models
+    with custom_object_scope(custom_objs):
+        deepfake_model = load_model("models/real_fake_vgg_model.h5", compile=False)
+        gender_model = load_model("models/MobileNetV2_gender_detection_model.h5", compile=False)
+        age_model = load_model("models/simple_cnn_age.h5", compile=False)
     return deepfake_model, gender_model, age_model
 
 deepfake_model, gender_model, age_model = load_models()
