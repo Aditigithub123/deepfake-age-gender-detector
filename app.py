@@ -10,17 +10,24 @@ from io import BytesIO
 from PIL import Image
 import mysql.connector
 from tensorflow.keras.layers import InputLayer as KerasInputLayer
-from tensorflow.keras.utils import custom_object_scope
 
-# Custom InputLayer to handle 'batch_shape' conversion
+# Custom InputLayer to remap 'batch_shape' and fix config issues
 class CustomInputLayer(KerasInputLayer):
     def __init__(self, **kwargs):
+        # Remap 'batch_shape' to 'batch_input_shape' if present.
         if 'batch_shape' in kwargs:
             kwargs['batch_input_shape'] = kwargs.pop('batch_shape')
         super(CustomInputLayer, self).__init__(**kwargs)
+    
+    @classmethod
+    def from_config(cls, config):
+        # If 'batch_shape' exists and is a string, convert it to a list.
+        if 'batch_shape' in config and isinstance(config['batch_shape'], str):
+            config['batch_shape'] = [config['batch_shape']]
+        return super(CustomInputLayer, cls).from_config(config)
 
 app = Flask(__name__)
-# For forcing login every time, we clear the session on logout.
+# Force login every time by clearing the session on logout.
 app.secret_key = os.urandom(24)
 
 # MySQL Database Connection configuration
@@ -38,16 +45,15 @@ if not os.path.exists(UPLOAD_FOLDER):
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 def load_models():
-    # Define custom objects for the model deserialization
+    # Dictionary of custom objects needed for deserialization.
     custom_objs = {
         'InputLayer': CustomInputLayer,
         'DTypePolicy': tf.keras.mixed_precision.Policy
     }
-    # Use a custom object scope so that these objects are recognized when loading models
-    with custom_object_scope(custom_objs):
-        deepfake_model = load_model("models/real_fake_vgg_model.h5", compile=False)
-        gender_model = load_model("models/MobileNetV2_gender_detection_model.h5", compile=False)
-        age_model = load_model("models/simple_cnn_age.h5", compile=False)
+    # Load models from the "models" folder using relative paths.
+    deepfake_model = load_model("models/real_fake_vgg_model.h5", compile=False, custom_objects=custom_objs)
+    gender_model = load_model("models/MobileNetV2_gender_detection_model.h5", compile=False, custom_objects=custom_objs)
+    age_model = load_model("models/simple_cnn_age.h5", compile=False, custom_objects=custom_objs)
     return deepfake_model, gender_model, age_model
 
 deepfake_model, gender_model, age_model = load_models()
@@ -109,10 +115,10 @@ def store_user_data(name, actual_age, gender, image_base64):
         if conn:
             conn.close()
 
-# Always show the login page on the root
+# Always show the login page on the root.
 @app.route("/", methods=["GET", "POST"])
 def login():
-    # Clear any existing session so the login page is always shown
+    # Clear any existing session so the login page is always shown.
     session.clear()
     if request.method == "POST":
         name = request.form.get("name")
@@ -121,7 +127,7 @@ def login():
         if not name or not actual_age or not gender:
             flash("Please provide your name, age, and gender.", "error")
             return redirect(url_for("login"))
-        # Store in session for use in image processing
+        # Store in session for use in image processing.
         session["name"] = name
         session["actual_age"] = actual_age
         session["gender"] = gender
@@ -130,7 +136,7 @@ def login():
 
 @app.route("/index", methods=["GET", "POST"])
 def index():
-    # Ensure the user is logged in via session
+    # Ensure the user is logged in via session.
     if "name" not in session or "actual_age" not in session or "gender" not in session:
         flash("Please log in first.", "error")
         return redirect(url_for("login"))
@@ -139,13 +145,13 @@ def index():
     actual_age = session.get("actual_age")
     gender = session.get("gender")
     
-    # Debug print the received login data
+    # Debug print the received login data.
     print(f"Login details received: name={name}, actual_age={actual_age}, gender={gender}")
     
     results = None
     img_url = None
     if request.method == "POST":
-        # Check if the user submitted an image upload or captured image
+        # Check if the user submitted an image upload or captured image.
         if "file" in request.files and request.files["file"].filename != "":
             file = request.files["file"]
             filename = secure_filename(file.filename)
@@ -160,13 +166,13 @@ def index():
             filename = "captured_image.jpg"
             filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
             save_base64_image(data, filepath)
-            image_base64 = data  # Already in Base64 format
+            image_base64 = data  # Already in Base64 format.
             img_url = url_for("static", filename="uploads/" + filename)
         else:
             flash("No image provided.", "error")
             return redirect(url_for("index"))
         
-        # Debug print to check that login values are received in the POST request as well
+        # Debug print to check that login values are received in the POST request as well.
         print("Image processing request received:")
         print("Name:", name)
         print("Actual Age:", actual_age)
@@ -186,7 +192,7 @@ def index():
     
     return render_template("index.html", results=results, img_url=img_url, name=name, actual_age=actual_age, gender=gender)
 
-# Optional logout route to clear the session and force login again
+# Optional logout route to clear the session and force login again.
 @app.route("/logout")
 def logout():
     session.clear()
